@@ -8,28 +8,37 @@ import { createServiceClient } from "@/lib/supabase/server";
  *
  * Le score de santé général reste explicable : vehicle_health_snapshots.explanation
  * liste toujours les observations qui le justifient — jamais un chiffre seul.
+ *
+ * Typé en `any` de façon assumée sur les résultats Supabase : ce module
+ * traite des lignes dynamiques issues de plusieurs requêtes agrégées, et le
+ * typage strict n'apporte rien ici (voir docs/DECISIONS.md).
  */
 export async function recomputeVehicleHealth(vehicleId: string) {
   const supabase = createServiceClient();
 
-  const { data: observations } = await supabase
+  const { data: eventIdsData } = await supabase
+    .from("technical_events")
+    .select("id")
+    .eq("vehicle_id", vehicleId);
+  const eventIds: string[] = (eventIdsData ?? []).map((e: any) => e.id);
+
+  const { data: observationsData } = await supabase
     .from("observations")
     .select("id, component_id, severity, urgency, state, recommendation, next_check_date, next_check_mileage, created_at, component:components(label)")
-    .in("event_id",
-      (await supabase.from("technical_events").select("id").eq("vehicle_id", vehicleId)).data?.map((e: { id: string }) => e.id) ?? []
-    )
+    .in("event_id", eventIds)
     .is("deleted_at", null)
     .order("created_at", { ascending: true });
 
-  const byComponent = new Map<string, typeof observations>();
-  for (const obs of observations ?? []) {
+  const observations: any[] = observationsData ?? [];
+
+  const byComponent = new Map<string, any[]>();
+  for (const obs of observations) {
     const list = byComponent.get(obs.component_id) ?? [];
     list.push(obs);
-    byComponent.set(obs.component_id, list as any);
+    byComponent.set(obs.component_id, list);
   }
 
-  for (const [componentId, obsListRaw] of byComponent) {
-    const obsList = (obsListRaw ?? []) as NonNullable<typeof observations>;
+  for (const [componentId, obsList] of byComponent) {
     const last = obsList[obsList.length - 1];
     if (!last) continue;
 
@@ -52,10 +61,13 @@ export async function recomputeVehicleHealth(vehicleId: string) {
     }, { onConflict: "vehicle_id,component_id" });
   }
 
-  const allLatestPerComponent = Array.from(byComponent.values()).map((list) => (list ?? [])[(list ?? []).length - 1]).filter(Boolean) as NonNullable<typeof observations>;
-  const urgentCount = allLatestPerComponent.filter((o) => Math.max(o.severity, o.urgency) >= 5).length;
-  const watchCount = allLatestPerComponent.filter((o) => Math.max(o.severity, o.urgency) === 3 || Math.max(o.severity, o.urgency) === 4).length;
-  const recommendedCount = allLatestPerComponent.filter((o) => !!o.recommendation).length;
+  const allLatestPerComponent: any[] = Array.from(byComponent.values())
+    .map((list: any[]) => list[list.length - 1])
+    .filter(Boolean);
+
+  const urgentCount = allLatestPerComponent.filter((o: any) => Math.max(o.severity, o.urgency) >= 5).length;
+  const watchCount = allLatestPerComponent.filter((o: any) => Math.max(o.severity, o.urgency) === 3 || Math.max(o.severity, o.urgency) === 4).length;
+  const recommendedCount = allLatestPerComponent.filter((o: any) => !!o.recommendation).length;
 
   const overallState =
     urgentCount > 0 ? "danger"
@@ -69,8 +81,8 @@ export async function recomputeVehicleHealth(vehicleId: string) {
     watch_count: watchCount,
     recommended_count: recommendedCount,
     explanation: {
-      observations: allLatestPerComponent.map((o) => ({
-        component: (o as any).component?.label,
+      observations: allLatestPerComponent.map((o: any) => ({
+        component: o.component?.label,
         severity: o.severity,
         urgency: o.urgency,
         recommendation: o.recommendation
