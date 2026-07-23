@@ -39,7 +39,7 @@ export default async function VehicleHistoryPage({ params }: { params: { id: str
         <div className="space-y-4">
           {(observations ?? []).map((o) => (
             <div key={o.id} className="card">
-              <p className="font-medium">{o.component?.label} — {o.title}</p>
+              <p className="font-medium">{(o.component as any)?.label} — {o.title}</p>
               <p className="text-xs text-muted mb-2">Créée le {new Date(o.created_at).toLocaleDateString("fr-FR")} — état actuel : {o.state}</p>
               {o.observation_history?.length > 0 ? (
                 <ul className="border-l border-line pl-3 space-y-1 mt-2">
