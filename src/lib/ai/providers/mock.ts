@@ -73,14 +73,14 @@ export const mockProvider: AIProvider = {
     return {
       provider: "mock",
       model: "mock-v1",
-      vin: vinMatch ? vinMatch[1].toUpperCase() : null,
-      plate: plateMatch ? plateMatch[1].toUpperCase().replace(/\s/g, "-") : null,
+   vin: vinMatch?.[1] ? vinMatch[1].toUpperCase() : null,
+plate: plateMatch?.[1] ? plateMatch[1].toUpperCase().replace(/\s/g, "-") : null,
       make: null,
       model_name: null,
       year: yearMatch ? Number(yearMatch[0]) : null,
       mileage: null,
       customer_name: null,
-      customer_phone: phoneMatch ? phoneMatch[0] : null,
+     customer_phone: phoneMatch?.[0] ?? null,
       confidence: req.imageBase64 ? 0.2 : 0.5,
       latencyMs: Date.now() - start
     };
