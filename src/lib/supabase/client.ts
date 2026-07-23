@@ -9,7 +9,7 @@ import { createBrowserClient } from "@supabase/ssr";
  * valeurs avant de construire le client, en amont de tout le reste du code.
  */
 function cleanEnv(value: string | undefined, name: string): string {
-  const cleaned = (value ?? "").trim().replace(/\/+$/, "");
+      const cleaned = (value ?? "").trim().replace(/\/+$/, "").replace(/\/rest\/v1\/?$/, "");
   if (!cleaned) {
     throw new Error(`Variable d'environnement manquante ou vide : ${name}`);
   }
