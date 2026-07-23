@@ -42,9 +42,9 @@ export default async function VehiclePage({ params }: { params: { id: string } }
   const STATE_COLOR: Record<string, string> = { danger: "text-danger", a_surveiller: "text-warn", bon: "text-safe" };
 
   const openWatch = (events ?? [])
-    .flatMap((e) => e.observations ?? [])
-    .filter((o) => ["ouverte", "surveillee"].includes(o.state));
-  const urgent = openWatch.filter((o) => Math.max(o.severity, o.urgency) >= 5);
+    .flatMap((e: any) => e.observations ?? [])
+    .filter((o: any) => ["ouverte", "surveillee"].includes(o.state));
+  const urgent = openWatch.filter((o: any) => Math.max(o.severity, o.urgency) >= 5);
 
   return (
     <div>
@@ -102,7 +102,7 @@ export default async function VehiclePage({ params }: { params: { id: string } }
           <section className="card">
             <h2 className="font-display text-lg font-medium mb-2">État des composants</h2>
             <ul className="divide-y divide-line">
-              {componentStates.map((c) => (
+              {componentStates.map((c: any) => (
                 <li key={c.id} className="py-2 flex items-center justify-between text-sm">
                   <span>{c.component?.label}</span>
                   <span className="text-muted">{c.current_state.replace(/_/g, " ")}</span>
@@ -115,7 +115,7 @@ export default async function VehiclePage({ params }: { params: { id: string } }
         <section>
           <h2 className="font-display text-lg font-medium mb-3">Chronologie</h2>
           <div className="space-y-3">
-            {(events ?? []).map((event) => (
+            {(events ?? []).map((event: any) => (
               <Link key={event.id} href={`/events/${event.id}`} className="card block hover:border-accent">
                 <div className="flex items-center justify-between">
                   <div>
@@ -125,7 +125,7 @@ export default async function VehiclePage({ params }: { params: { id: string } }
                     </p>
                   </div>
                   <div className="flex gap-1">
-                    {(event.observations ?? []).slice(0, 3).map((o) => (
+                    {(event.observations ?? []).slice(0, 3).map((o: any) => (
                       <SeverityBadge key={o.id} severity={Math.max(o.severity, o.urgency)} />
                     ))}
                   </div>

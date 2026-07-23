@@ -31,7 +31,7 @@ export async function POST(req: NextRequest, { params }: { params: { eventId: st
     .eq("event_id", params.eventId)
     .is("deleted_at", null);
 
-  const observations = (observationsRaw ?? []).filter((o) => {
+  const observations = (observationsRaw ?? []).filter((o: any) => {
     if (kind !== "client") return true;
     // Garde-fou non contournable : sécurité prioritaire sur la préférence d'affichage.
     return o.include_in_client_report || mustAppearInClientReport(o.severity, o.urgency);
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: { eventId: st
       { role: "system", content: REPORT_SYSTEM_PROMPT },
       {
         role: "user",
-        content: JSON.stringify({ kind, vehicle: event.vehicle, observations }, null, 2)
+        content: JSON.stringify({ kind, vehicle: (event as any).vehicle, observations }, null, 2)
       }
     ]
   });
@@ -58,17 +58,17 @@ export async function POST(req: NextRequest, { params }: { params: { eventId: st
 
   const pdfBytes = await generateReportPdf({
     workshopName: process.env.NEXT_PUBLIC_WORKSHOP_NAME ?? "BNY Auto",
-    vehicle: event.vehicle,
+    vehicle: (event as any).vehicle,
     eventTitle: event.title,
     eventDate: new Date(event.created_at).toLocaleDateString("fr-FR"),
-    technicianName: event.technician?.full_name ?? null,
+    technicianName: (event as any).technician?.full_name ?? null,
     kind,
     summary,
-    observations: observations.map((o) => ({
+    observations: observations.map((o: any) => ({
       title: o.title,
       description: o.description,
       severity: o.severity,
-      componentLabel: o.component?.label ?? "Composant",
+      componentLabel: (o as any).component?.label ?? "Composant",
       recommendation: o.recommendation,
       wearPercent: o.wear_percent,
       remainingPercent: o.remaining_percent

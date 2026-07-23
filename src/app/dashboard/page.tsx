@@ -25,7 +25,7 @@ export default async function DashboardPage() {
     supabase.from("vehicles").select("id, plate, make, model, updated_at").order("updated_at", { ascending: false }).limit(5)
   ]);
 
-  const urgentCount = (openObservations ?? []).filter((o) => Math.max(o.severity, o.urgency) >= 5).length;
+  const urgentCount = (openObservations ?? []).filter((o: any) => Math.max(o.severity, o.urgency) >= 5).length;
 
   return (
     <div>
@@ -49,7 +49,7 @@ export default async function DashboardPage() {
             <p className="text-muted text-sm">Aucune observation en cours. Créez une inspection pour commencer.</p>
           ) : (
             <ul className="divide-y divide-line">
-              {openObservations.map((o) => {
+              {openObservations.map((o: any) => {
                 const event = Array.isArray(o.event) ? o.event[0] : o.event;
                 const vehicle = event?.vehicle ? (Array.isArray(event.vehicle) ? event.vehicle[0] : event.vehicle) : null;
                 return (
@@ -85,7 +85,7 @@ export default async function DashboardPage() {
           <section>
             <h2 className="font-display text-lg font-medium mb-3">Véhicules récents</h2>
             <div className="grid gap-2">
-              {recentVehicles.map((v) => (
+              {recentVehicles.map((v: any) => (
                 <Link key={v.id} href={`/vehicles/${v.id}`} className="card flex items-center justify-between hover:border-accent py-3">
                   <p className="font-medium">{v.make} {v.model}</p>
                   <p className="text-sm text-muted">{v.plate}</p>

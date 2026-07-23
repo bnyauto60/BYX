@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
   const vehicleId = (current.event as any)?.vehicle_id;
   const { data: vehicleEvents } = await supabase.from("technical_events").select("id").eq("vehicle_id", vehicleId);
-  const eventIds = (vehicleEvents ?? []).map((e) => e.id);
+  const eventIds = (vehicleEvents ?? []).map((e: any) => e.id);
 
   const { data: history } = await supabase
     .from("observations")

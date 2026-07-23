@@ -77,7 +77,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
 
         <section className="space-y-3">
           <h2 className="font-display text-lg font-medium">Observations de cet événement</h2>
-          {(observations ?? []).map((o) => (
+          {(observations ?? []).map((o: any) => (
             <div key={o.id} className="card">
               <div className="flex items-start justify-between gap-3">
                 <div>

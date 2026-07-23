@@ -32,7 +32,7 @@ export default async function SettingsPage() {
             <p className="text-sm text-muted">Aucune proposition en attente.</p>
           ) : (
             <ul className="divide-y divide-line">
-              {proposals!.map((p) => (
+              {proposals!.map((p: any) => (
                 <li key={p.id} className="py-2 flex items-center justify-between">
                   <span>{p.label} <span className="text-muted text-sm">({p.family?.label})</span></span>
                   <ValidateButton id={p.id} />
