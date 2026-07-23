@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 
 /** Voir lib/supabase/client.ts::cleanEnv — même nettoyage défensif côté serveur. */
 function cleanEnv(value: string | undefined, name: string): string {
-  const cleaned = (value ?? "").trim().replace(/\/+$/, "");
+    const cleaned = (value ?? "").trim().replace(/\/+$/, "").replace(/\/rest\/v1\/?$/, "");
   if (!cleaned) {
     throw new Error(`Variable d'environnement manquante ou vide : ${name}`);
   }
