@@ -67,7 +67,7 @@ export default async function VehiclePage({ params }: { params: { id: string } }
                     </p>
                   </div>
                   <div className="flex gap-1">
-                    {(event.observations ?? []).slice(0, 3).map((o) => (
+                    {(event.observations ?? []).slice(0, 3).map((o: any) => (
                       <SeverityBadge key={o.id} severity={Math.max(o.severity, o.urgency)} />
                     ))}
                   </div>
