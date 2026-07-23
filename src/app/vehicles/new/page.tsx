@@ -4,11 +4,17 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { NavBar } from "@/components/NavBar";
+import { DocumentCapture, type ExtractedFields } from "@/components/DocumentCapture";
 
 /**
  * Le VIN est la clé pivot forte (voir docs/DECISIONS.md). Avant de créer une
  * fiche, on vérifie qu'aucun véhicule avec ce VIN n'existe déjà dans
  * l'atelier, pour éviter les doublons (cahier des charges §4.1).
+ *
+ * Amélioration demandée : la photo (carte grise / fiche client) ou la
+ * dictée remplissent le formulaire automatiquement via DocumentCapture ;
+ * la saisie manuelle reste toujours possible et prioritaire si le
+ * mécanicien corrige un champ après extraction.
  */
 export default function NewVehiclePage() {
   const router = useRouter();
@@ -18,9 +24,25 @@ export default function NewVehiclePage() {
   const [error, setError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
   const [existing, setExisting] = useState<{ id: string; plate: string } | null>(null);
+  const [lastExtractionConfidence, setLastExtractionConfidence] = useState<number | null>(null);
 
   function update<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function applyExtraction(fields: ExtractedFields) {
+    setLastExtractionConfidence(fields.confidence);
+    setForm((f) => ({
+      vin: fields.vin ?? f.vin,
+      plate: fields.plate ?? f.plate,
+      make: fields.make ?? f.make,
+      model: fields.model_name ?? f.model,
+      year: fields.year ? String(fields.year) : f.year,
+      mileage: fields.mileage ? String(fields.mileage) : f.mileage,
+      customerName: fields.customer_name ?? f.customerName,
+      customerPhone: fields.customer_phone ?? f.customerPhone
+    }));
+    if (fields.vin) checkVin(fields.vin);
   }
 
   async function checkVin(vin: string) {
@@ -86,8 +108,17 @@ export default function NewVehiclePage() {
   return (
     <div>
       <NavBar />
-      <main className="max-w-xl mx-auto px-4 py-8">
-        <h1 className="font-display text-2xl font-semibold mb-6">Nouveau véhicule</h1>
+      <main className="max-w-xl mx-auto px-4 py-8 space-y-4">
+        <h1 className="font-display text-2xl font-semibold">Nouveau véhicule</h1>
+
+        <DocumentCapture onExtracted={applyExtraction} />
+
+        {lastExtractionConfidence !== null && lastExtractionConfidence < 0.5 && (
+          <p className="text-xs text-warn">
+            Extraction peu fiable — vérifiez et corrigez les champs ci-dessous avant de créer le véhicule.
+          </p>
+        )}
+
         <form onSubmit={handleSubmit} className="card space-y-4">
           <div>
             <label className="label" htmlFor="vin">VIN (numéro de châssis)</label>

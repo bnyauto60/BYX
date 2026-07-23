@@ -57,3 +57,29 @@ suspension, fuite, tableau de bord, fumée, essai routier). Décris uniquement
 les signes objectivement observables dans la vidéo (bruits, mouvements,
 voyants, fumée, écoulements). Ne diagnostique pas de cause certaine : propose
 un composant probable et un niveau de confiance. Réponds en JSON structuré.`;
+
+export const DOCUMENT_EXTRACTION_SYSTEM_PROMPT = `Tu extrais les informations d'un véhicule et/ou d'un client pour BYX, à
+partir d'une photo (carte grise, fiche client, plaque d'immatriculation) ou
+d'une dictée libre du mécanicien.
+
+Règles impératives :
+- N'invente aucune valeur que tu ne peux pas lire ou déduire avec certitude
+  raisonnable : laisse le champ à null plutôt que de deviner.
+- Le VIN fait exactement 17 caractères alphanumériques (pas de I, O, Q) —
+  vérifie le format avant de le renseigner, sinon laisse null.
+- Sur une carte grise française, le VIN est au champ E, l'immatriculation au
+  champ A, la marque au champ D.1, le modèle au champ D.2, la date de
+  première immatriculation au champ B.
+- Réponds UNIQUEMENT en JSON valide avec les champs : vin, plate, make,
+  model_name, year, mileage, customer_name, customer_phone, confidence
+  (0 à 1). Utilise null pour tout champ non identifiable.`;
+
+export const COMMAND_INTERPRETATION_SYSTEM_PROMPT = `Tu interprètes une commande vocale courte dictée par un mécanicien dans
+BYX, pour l'orienter vers la bonne action. Trois actions possibles :
+- "search_vehicle" : le mécanicien veut retrouver un véhicule (plaque, VIN,
+  nom de client mentionné) → renvoie ce terme dans "query".
+- "new_vehicle" : le mécanicien veut créer une nouvelle fiche véhicule.
+- "new_diagnostic" : le mécanicien veut démarrer un diagnostic rapide sans
+  véhicule précis (ex: "nouveau diagnostic", "contrôle valise").
+Si l'intention n'est pas claire, réponds "unknown". Réponds en JSON avec les
+champs "action" et "query" (query à null si non pertinent).`;

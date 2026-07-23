@@ -4,7 +4,11 @@ import type {
   AITextRequest,
   AITextResponse,
   AIVideoAnalysisRequest,
-  AIVideoAnalysisResponse
+  AIVideoAnalysisResponse,
+  AIDocumentExtractionRequest,
+  AIDocumentExtractionResponse,
+  AICommandRequest,
+  AICommandResponse
 } from "./types";
 import { mockProvider } from "./providers/mock";
 import { openaiProvider } from "./providers/openai";
@@ -72,6 +76,34 @@ export async function runVideoAnalysis(req: AIVideoAnalysisRequest): Promise<AIV
     throw new Error("Aucun provider IA ne supporte l'analyse vidéo actuellement");
   }
   return provider.runVideoAnalysis(req);
+}
+
+export async function runDocumentExtraction(req: AIDocumentExtractionRequest): Promise<AIDocumentExtractionResponse> {
+  const routing = getTaskRouting();
+  const preferred = routing.document ?? process.env.AI_DEFAULT_PROVIDER ?? "mock";
+  let provider = registry[preferred];
+
+  if (!provider?.extractDocument) {
+    provider = Object.values(registry).find((p) => !!p.extractDocument);
+  }
+  if (!provider?.extractDocument) {
+    throw new Error("Aucun provider IA ne supporte l'extraction de document actuellement");
+  }
+  return provider.extractDocument(req);
+}
+
+export async function interpretVoiceCommand(req: AICommandRequest): Promise<AICommandResponse> {
+  const routing = getTaskRouting();
+  const preferred = routing.command ?? process.env.AI_DEFAULT_PROVIDER ?? "mock";
+  let provider = registry[preferred];
+
+  if (!provider?.interpretCommand) {
+    provider = Object.values(registry).find((p) => !!p.interpretCommand);
+  }
+  if (!provider?.interpretCommand) {
+    return { provider: "none", action: "unknown", query: null };
+  }
+  return provider.interpretCommand(req);
 }
 
 /** Utilisé par l'UI pour afficher si l'analyse temps réel est possible avec la config actuelle. */

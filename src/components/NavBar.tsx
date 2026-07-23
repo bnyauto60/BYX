@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ConnectivityIndicator } from "./ConnectivityIndicator";
 
 export function NavBar() {
   return (
@@ -7,10 +8,13 @@ export function NavBar() {
         <Link href="/dashboard" className="font-display text-xl font-semibold tracking-tight">
           BYX
         </Link>
-        <nav className="flex gap-4 text-sm text-muted">
+        <nav className="flex items-center gap-4 text-sm text-muted">
           <Link href="/dashboard" className="hover:text-text">Tableau de bord</Link>
           <Link href="/vehicles" className="hover:text-text">Véhicules</Link>
           <Link href="/vehicles/new" className="hover:text-text">Nouveau véhicule</Link>
+          <Link href="/diagnostic/new" className="hover:text-text">Diagnostic</Link>
+          <Link href="/settings" className="hover:text-text">Paramètres</Link>
+          <ConnectivityIndicator />
         </nav>
       </div>
     </header>

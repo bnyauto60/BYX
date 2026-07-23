@@ -27,7 +27,7 @@ create or replace function current_workshop_id() returns uuid as $$
   select workshop_id from users_profile where id = auth.uid();
 $$ language sql stable security definer;
 
-create or replace function current_role() returns user_role as $$
+create or replace function current_user_role() returns user_role as $$
   select role from users_profile where id = auth.uid();
 $$ language sql stable security definer;
 
@@ -38,7 +38,7 @@ create policy components_read on components for select using (true);
 create policy components_propose on components for insert
   with check (auth.uid() is not null);
 create policy components_validate on components for update
-  using (current_role() in ('admin','atelier_responsable'));
+  using (current_user_role() in ('admin','atelier_responsable'));
 
 -- Isolation stricte par atelier sur toutes les tables métier
 create policy workshops_self on workshops for select using (id = current_workshop_id());
@@ -77,7 +77,7 @@ create policy observation_history_isolation on observation_history for select
 
 create policy evidence_isolation on evidence for all
   using (
-    event_id in (select id from technical_events te join vehicles v on v.id = te.vehicle_id where v.workshop_id = current_workshop_id())
+    event_id in (select te.id from technical_events te join vehicles v on v.id = te.vehicle_id where v.workshop_id = current_workshop_id())
     or observation_id in (
       select o.id from observations o
       join technical_events te on te.id = o.event_id
@@ -87,7 +87,7 @@ create policy evidence_isolation on evidence for all
   );
 
 create policy measurements_isolation on measurements for all
-  using (event_id in (select id from technical_events te join vehicles v on v.id = te.vehicle_id where v.workshop_id = current_workshop_id()));
+  using (event_id in (select te.id from technical_events te join vehicles v on v.id = te.vehicle_id where v.workshop_id = current_workshop_id()));
 
 create policy recommendations_isolation on recommendations for all
   using (observation_id in (
@@ -98,7 +98,7 @@ create policy recommendations_isolation on recommendations for all
   ));
 
 create policy reports_isolation on reports for all
-  using (event_id in (select id from technical_events te join vehicles v on v.id = te.vehicle_id where v.workshop_id = current_workshop_id()));
+  using (event_id in (select te.id from technical_events te join vehicles v on v.id = te.vehicle_id where v.workshop_id = current_workshop_id()));
 
 create policy report_versions_isolation on report_versions for select
   using (report_id in (
@@ -109,7 +109,7 @@ create policy report_versions_isolation on report_versions for select
   ));
 
 create policy ai_analyses_isolation on ai_analyses for all
-  using (event_id in (select id from technical_events te join vehicles v on v.id = te.vehicle_id where v.workshop_id = current_workshop_id()));
+  using (event_id in (select te.id from technical_events te join vehicles v on v.id = te.vehicle_id where v.workshop_id = current_workshop_id()));
 
 create policy component_states_isolation on component_states for all
   using (vehicle_id in (select id from vehicles where workshop_id = current_workshop_id()));
@@ -119,7 +119,7 @@ create policy vehicle_health_isolation on vehicle_health_snapshots for all
 
 -- Journal d'audit : lecture réservée admin / responsable atelier, jamais de update/delete applicatif
 create policy audit_logs_read on audit_logs for select
-  using (workshop_id = current_workshop_id() and current_role() in ('admin','atelier_responsable'));
+  using (workshop_id = current_workshop_id() and current_user_role() in ('admin','atelier_responsable'));
 create policy audit_logs_insert on audit_logs for insert
   with check (workshop_id = current_workshop_id());
 

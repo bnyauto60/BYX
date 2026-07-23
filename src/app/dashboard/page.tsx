@@ -11,7 +11,7 @@ export default async function DashboardPage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [{ count: eventsToday }, { data: openObservations }, { count: reportsCount }] = await Promise.all([
+  const [{ count: eventsToday }, { data: openObservations }, { count: reportsCount }, { data: recentVehicles }] = await Promise.all([
     supabase.from("technical_events").select("id", { count: "exact", head: true }).gte("created_at", today.toISOString()),
     supabase
       .from("observations")
@@ -19,7 +19,10 @@ export default async function DashboardPage() {
       .in("state", ["ouverte", "surveillee"])
       .order("severity", { ascending: false })
       .limit(8),
-    supabase.from("reports").select("id", { count: "exact", head: true })
+    supabase.from("reports").select("id", { count: "exact", head: true }),
+    // Véhicules récents : accès direct en un tap, sans repasser par la recherche
+    // (utile pour les clients réguliers — amélioration demandée).
+    supabase.from("vehicles").select("id, plate, make, model, updated_at").order("updated_at", { ascending: false }).limit(5)
   ]);
 
   const urgentCount = (openObservations ?? []).filter((o) => Math.max(o.severity, o.urgency) >= 5).length;
@@ -72,10 +75,25 @@ export default async function DashboardPage() {
           )}
         </section>
 
-        <div className="flex gap-3">
-          <Link href="/vehicles/new" className="btn btn-primary">Nouveau véhicule</Link>
-          <Link href="/vehicles" className="btn btn-secondary">Rechercher un véhicule</Link>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Link href="/vehicles/new" className="btn btn-primary justify-center">Nouveau véhicule</Link>
+          <Link href="/vehicles" className="btn btn-secondary justify-center">Rechercher un véhicule</Link>
+          <Link href="/diagnostic/new" className="btn btn-secondary justify-center">Diagnostic</Link>
         </div>
+
+        {recentVehicles && recentVehicles.length > 0 && (
+          <section>
+            <h2 className="font-display text-lg font-medium mb-3">Véhicules récents</h2>
+            <div className="grid gap-2">
+              {recentVehicles.map((v) => (
+                <Link key={v.id} href={`/vehicles/${v.id}`} className="card flex items-center justify-between hover:border-accent py-3">
+                  <p className="font-medium">{v.make} {v.model}</p>
+                  <p className="text-sm text-muted">{v.plate}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );

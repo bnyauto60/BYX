@@ -21,6 +21,31 @@ de facturation de l'atelier.
   cloud
 - Garde-fou non contournable : une observation urgente ne peut jamais être
   cachée du rapport client
+- Historique complet et traçabilité par véhicule (chronologie des
+  changements d'état de chaque observation, historisée automatiquement en
+  base par trigger SQL)
+- Aide au diagnostic IA : hypothèses avec éléments favorables/défavorables
+  et niveau de confiance, jamais un diagnostic présenté comme certain
+- Gouvernance du référentiel de composants : un mécanicien peut proposer un
+  composant manquant, un responsable atelier le valide depuis Paramètres
+- État de santé calculé (jamais saisi manuellement) : état par composant et
+  synthèse générale du véhicule, toujours accompagnés du détail des
+  observations qui les justifient, recalculés automatiquement après chaque
+  observation validée
+- Comparaison automatique avec l'historique du même composant sur le même
+  véhicule (usure stable, dégradation rapide, problème récurrent…)
+- Recherche de véhicule multi-critères (immatriculation, VIN, marque,
+  modèle, nom et téléphone du client) et **recherche par photo** : une
+  photo du véhicule suffit à identifier la plaque et retrouver la fiche
+- Création de véhicule/client **par photo** (carte grise, fiche client) ou
+  **par dictée vocale**, avec remplissage automatique des champs — la
+  saisie manuelle reste disponible pour corriger
+- **Diagnostic autonome** : possibilité de démarrer un diagnostic rapide
+  sans créer de fiche véhicule au préalable (contrôle valise entre deux
+  rendez-vous), avec possibilité de relier un véhicule après coup
+- **Bouton micro flottant global**, disponible sur tout l'écran, pour
+  naviguer à la voix ("cherche AB123CD", "nouveau véhicule", "diagnostic")
+- Indicateur de connexion réseau visible en permanence
 
 ## Ce qui rend cette base "premium" plutôt que jetable
 
@@ -47,7 +72,7 @@ choix faits là où le cahier des charges laissait un point ouvert.
 ```bash
 npm install
 cp .env.example .env.local   # renseigner les clés Supabase
-# exécuter supabase/migrations/0001_init.sql puis 0002_rls.sql dans Supabase
+# exécuter dans l'ordre : 0001_init.sql, 0002_rls.sql, 0003_observation_history_trigger.sql, 0004_standalone_diagnostics.sql
 npm run dev
 ```
 
@@ -82,7 +107,5 @@ docs/
   valider le workflow terrain avant d'activer une IA payante.
 - Une fois validé : activer `AI_DEFAULT_PROVIDER=openai` ou `anthropic` et
   comparer la qualité de structuration sur des cas réels.
-- Ajouter la comparaison historique automatique (§9.3 du cahier des
-  charges) et l'état calculé des composants (§6), esquissés dans le schéma
-  (`component_states`, `vehicle_health_snapshots`) mais pas encore reliés à
-  une interface dédiée dans ce premier MVP.
+- Ajouter un écran de comparaison avant/après sur les photos (déjà supporté
+  par le champ `evidence.is_before`) et le partage de rapport par lien.

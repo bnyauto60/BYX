@@ -17,9 +17,11 @@ import type { Component } from "@/types";
  */
 export function ObservationForm({
   eventId,
+  vehicleId,
   components
 }: {
   eventId: string;
+  vehicleId: string | null;
   components: Component[];
 }) {
   const router = useRouter();
@@ -86,6 +88,12 @@ export function ObservationForm({
       );
     }
     void forcedReport;
+
+    // Recalcule l'état des composants et la santé générale — jamais saisi
+    // manuellement, toujours dérivé des observations (cahier des charges §6-§7).
+    if (vehicleId) {
+      fetch(`/api/vehicles/${vehicleId}/recompute-health`, { method: "POST" }).catch(() => {});
+    }
 
     setLoading(false);
     router.refresh();

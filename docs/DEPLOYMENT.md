@@ -22,7 +22,9 @@ Dans le tableau de bord Supabase (SQL Editor), exécuter dans l'ordre :
 
 1. `supabase/migrations/0001_init.sql`
 2. `supabase/migrations/0002_rls.sql`
-3. (optionnel, pour tester immédiatement) `supabase/seed.sql`
+3. `supabase/migrations/0003_observation_history_trigger.sql`
+4. `supabase/migrations/0004_standalone_diagnostics.sql`
+5. (optionnel, pour tester immédiatement) `supabase/seed.sql`
 
 Ou, avec la CLI Supabase installée :
 

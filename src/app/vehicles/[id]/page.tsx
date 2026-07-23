@@ -24,6 +24,23 @@ export default async function VehiclePage({ params }: { params: { id: string } }
     .eq("vehicle_id", params.id)
     .order("created_at", { ascending: false });
 
+  const { data: latestSnapshot } = await supabase
+    .from("vehicle_health_snapshots")
+    .select("*")
+    .eq("vehicle_id", params.id)
+    .order("computed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const { data: componentStates } = await supabase
+    .from("component_states")
+    .select("*, component:components(label)")
+    .eq("vehicle_id", params.id)
+    .order("severity", { ascending: false });
+
+  const STATE_LABEL: Record<string, string> = { danger: "Danger — intervention urgente", a_surveiller: "À surveiller", bon: "Bon état général" };
+  const STATE_COLOR: Record<string, string> = { danger: "text-danger", a_surveiller: "text-warn", bon: "text-safe" };
+
   const openWatch = (events ?? [])
     .flatMap((e) => e.observations ?? [])
     .filter((o) => ["ouverte", "surveillee"].includes(o.state));
@@ -43,6 +60,10 @@ export default async function VehiclePage({ params }: { params: { id: string } }
           <Link href={`/vehicles/${params.id}/events/new`} className="btn btn-primary">Nouvel événement</Link>
         </div>
 
+        <Link href={`/vehicles/${params.id}/history`} className="text-sm text-accent hover:underline">
+          Voir l'historique complet et la traçabilité →
+        </Link>
+
         <div className="grid grid-cols-2 gap-3">
           <div className="card">
             <p className={`font-display text-2xl font-semibold ${urgent.length ? "text-danger" : "text-safe"}`}>{urgent.length}</p>
@@ -53,6 +74,43 @@ export default async function VehiclePage({ params }: { params: { id: string } }
             <p className="text-muted text-sm">Composants à surveiller</p>
           </div>
         </div>
+
+        {latestSnapshot && (
+          <section className="card">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-display text-lg font-medium">État de santé général</h2>
+              <span className={`font-medium ${STATE_COLOR[latestSnapshot.overall_state] ?? ""}`}>
+                {STATE_LABEL[latestSnapshot.overall_state] ?? latestSnapshot.overall_state}
+              </span>
+            </div>
+            <p className="text-sm text-muted mb-2">
+              {latestSnapshot.urgent_count} élément(s) urgent(s) · {latestSnapshot.watch_count} composant(s) à surveiller · {latestSnapshot.recommended_count} recommandation(s)
+            </p>
+            {/* Le score n'est jamais affiché seul : le détail qui le justifie est toujours accessible. */}
+            <details className="text-sm text-muted">
+              <summary className="cursor-pointer text-accent">Pourquoi ce résultat ?</summary>
+              <ul className="mt-2 space-y-1">
+                {(latestSnapshot.explanation?.observations ?? []).map((o: { component: string; severity: number; urgency: number; recommendation: string | null }, i: number) => (
+                  <li key={i}>• {o.component} — gravité {o.severity}/urgence {o.urgency}{o.recommendation ? ` — ${o.recommendation}` : ""}</li>
+                ))}
+              </ul>
+            </details>
+          </section>
+        )}
+
+        {componentStates && componentStates.length > 0 && (
+          <section className="card">
+            <h2 className="font-display text-lg font-medium mb-2">État des composants</h2>
+            <ul className="divide-y divide-line">
+              {componentStates.map((c) => (
+                <li key={c.id} className="py-2 flex items-center justify-between text-sm">
+                  <span>{c.component?.label}</span>
+                  <span className="text-muted">{c.current_state.replace(/_/g, " ")}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section>
           <h2 className="font-display text-lg font-medium mb-3">Chronologie</h2>
@@ -67,7 +125,7 @@ export default async function VehiclePage({ params }: { params: { id: string } }
                     </p>
                   </div>
                   <div className="flex gap-1">
-                    {(event.observations ?? []).slice(0, 3).map((o: any) => (
+                    {(event.observations ?? []).slice(0, 3).map((o) => (
                       <SeverityBadge key={o.id} severity={Math.max(o.severity, o.urgency)} />
                     ))}
                   </div>

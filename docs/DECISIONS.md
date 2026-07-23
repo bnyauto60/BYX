@@ -87,3 +87,23 @@ enregistrement `reports` séparé, versionné indépendamment** dans
 `report_versions`, plutôt qu'un unique document avec des sections
 masquables. Cela évite qu'une préférence d'affichage change accidentellement
 ce qui a été historiquement montré au client à une date donnée.
+
+## 11. Diagnostics autonomes sans véhicule
+
+**Décision : `technical_events.vehicle_id` et `technical_record_id` sont
+désormais nullables**, avec une colonne `workshop_id` ajoutée directement sur
+la table pour que la sécurité (RLS) reste applicable même sans véhicule
+identifié (cas d'un contrôle valise rapide entre deux rendez-vous). Le
+véhicule peut être relié après coup depuis l'écran de l'événement
+(`/events/:id/link-vehicle`), qui met à jour `vehicle_id` et
+`technical_record_id` rétroactivement.
+
+## 12. Extraction de document par IA plutôt que règles OCR classiques
+
+**Décision : la lecture de carte grise / fiche client / plaque passe par
+l'IA vision (tâche `document` du routeur)**, pas par une bibliothèque OCR
+dédiée. Plus simple à maintenir (une seule couche d'abstraction IA pour
+tout), et gère naturellement les cas ambigus (photo floue, angle) en
+renvoyant `null` plutôt qu'une valeur incertaine — au prix d'une dépendance
+à une clé IA réelle pour être pleinement fiable (le mode `mock` ne peut pas
+lire une image, seulement une dictée texte).

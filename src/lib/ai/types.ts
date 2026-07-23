@@ -16,7 +16,9 @@ export type AITask =
   | "diagnostic"       // hypothèses de diagnostic à partir d'observations/mesures
   | "comparaison"      // comparaison avec l'historique du véhicule
   | "rapport"          // génération du texte des rapports (client/technique/interne)
-  | "video";           // analyse d'une vidéo de diagnostic (asynchrone ou temps réel)
+  | "video"            // analyse d'une vidéo de diagnostic (asynchrone ou temps réel)
+  | "document"         // extraction de champs depuis une photo (carte grise, fiche client) ou une dictée
+  | "command";         // interprétation d'une commande vocale globale ("cherche AB123CD", "nouveau véhicule"...)
 
 export interface AIMessage {
   role: "system" | "user";
@@ -63,6 +65,44 @@ export interface AIVideoAnalysisResponse {
   raw?: unknown;
 }
 
+/** Extraction de champs véhicule/client depuis une photo (carte grise, fiche
+ * client, plaque) ou depuis une dictée libre — au choix, l'une des deux. */
+export interface AIDocumentExtractionRequest {
+  task: "document";
+  imageBase64?: string;
+  imageMediaType?: string;
+  text?: string;
+  kind: "registration" | "customer_card" | "plate_photo" | "voice";
+}
+
+export interface AIDocumentExtractionResponse {
+  provider: string;
+  model: string;
+  vin: string | null;
+  plate: string | null;
+  make: string | null;
+  model_name: string | null;
+  year: number | null;
+  mileage: number | null;
+  customer_name: string | null;
+  customer_phone: string | null;
+  confidence: number;
+  latencyMs: number;
+}
+
+/** Interprétation d'une commande vocale globale, dictée depuis le bouton
+ * micro flottant présent partout dans l'app. */
+export interface AICommandRequest {
+  task: "command";
+  text: string;
+}
+
+export interface AICommandResponse {
+  provider: string;
+  action: "search_vehicle" | "new_vehicle" | "new_diagnostic" | "unknown";
+  query: string | null;
+}
+
 export interface AIProvider {
   /** Identifiant stable utilisé dans AI_TASK_ROUTING et stocké dans ai_analyses.provider */
   id: string;
@@ -73,6 +113,10 @@ export interface AIProvider {
   runVideoAnalysis?(req: AIVideoAnalysisRequest): Promise<AIVideoAnalysisResponse>;
   /** Optionnel : capacité d'analyse en flux temps réel (voir docs/ARCHITECTURE.md §Vidéo temps réel). */
   supportsRealtime?: boolean;
+  /** Optionnel : extraction de champs depuis une photo de document ou une dictée. */
+  extractDocument?(req: AIDocumentExtractionRequest): Promise<AIDocumentExtractionResponse>;
+  /** Optionnel : interprétation d'une commande vocale globale. */
+  interpretCommand?(req: AICommandRequest): Promise<AICommandResponse>;
 }
 
 /** Résultat structuré attendu pour la tâche "structuration" (dictée -> observation). */

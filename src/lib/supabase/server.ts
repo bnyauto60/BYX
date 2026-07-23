@@ -1,11 +1,20 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+/** Voir lib/supabase/client.ts::cleanEnv — même nettoyage défensif côté serveur. */
+function cleanEnv(value: string | undefined, name: string): string {
+  const cleaned = (value ?? "").trim().replace(/\/+$/, "");
+  if (!cleaned) {
+    throw new Error(`Variable d'environnement manquante ou vide : ${name}`);
+  }
+  return cleaned;
+}
+
 export function createClient() {
   const cookieStore = cookies();
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL, "NEXT_PUBLIC_SUPABASE_URL"),
+    cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, "NEXT_PUBLIC_SUPABASE_ANON_KEY"),
     {
       cookies: {
         get(name: string) {
@@ -28,7 +37,7 @@ export function createClient() {
 export function createServiceClient() {
   const { createClient: createSupabaseClient } = require("@supabase/supabase-js");
   return createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL, "NEXT_PUBLIC_SUPABASE_URL"),
+    cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY, "SUPABASE_SERVICE_ROLE_KEY")
   );
 }

@@ -3,8 +3,13 @@ import type {
   AITextRequest,
   AITextResponse,
   AIVideoAnalysisRequest,
-  AIVideoAnalysisResponse
+  AIVideoAnalysisResponse,
+  AIDocumentExtractionRequest,
+  AIDocumentExtractionResponse,
+  AICommandRequest,
+  AICommandResponse
 } from "../types";
+import { DOCUMENT_EXTRACTION_SYSTEM_PROMPT, COMMAND_INTERPRETATION_SYSTEM_PROMPT } from "../prompts";
 
 const API_URL = "https://api.openai.com/v1/chat/completions";
 
@@ -98,6 +103,82 @@ export const openaiProvider: AIProvider = {
       confidence: parsed.confidence,
       latencyMs: Date.now() - start,
       raw: data
+    };
+  },
+
+  async extractDocument(req: AIDocumentExtractionRequest): Promise<AIDocumentExtractionResponse> {
+    const start = Date.now();
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error("OPENAI_API_KEY manquant");
+
+    const userContent: unknown[] = [];
+    if (req.text) userContent.push({ type: "text", text: `Dictée du mécanicien : ${req.text}` });
+    if (req.imageBase64) {
+      userContent.push({
+        type: "image_url",
+        image_url: { url: `data:${req.imageMediaType ?? "image/jpeg"};base64,${req.imageBase64}` }
+      });
+    }
+    userContent.push({ type: "text", text: `Type de document : ${req.kind}` });
+
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: process.env.OPENAI_MODEL ?? "gpt-4o",
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: DOCUMENT_EXTRACTION_SYSTEM_PROMPT },
+          { role: "user", content: userContent }
+        ]
+      })
+    });
+
+    if (!res.ok) throw new Error(`OpenAI API error ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+    const parsed = JSON.parse(data.choices?.[0]?.message?.content ?? "{}");
+
+    return {
+      provider: "openai",
+      model: process.env.OPENAI_MODEL ?? "gpt-4o",
+      vin: parsed.vin ?? null,
+      plate: parsed.plate ?? null,
+      make: parsed.make ?? null,
+      model_name: parsed.model_name ?? null,
+      year: parsed.year ?? null,
+      mileage: parsed.mileage ?? null,
+      customer_name: parsed.customer_name ?? null,
+      customer_phone: parsed.customer_phone ?? null,
+      confidence: parsed.confidence ?? 0.5,
+      latencyMs: Date.now() - start
+    };
+  },
+
+  async interpretCommand(req: AICommandRequest): Promise<AICommandResponse> {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error("OPENAI_API_KEY manquant");
+
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: process.env.OPENAI_MODEL ?? "gpt-4o",
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: COMMAND_INTERPRETATION_SYSTEM_PROMPT },
+          { role: "user", content: req.text }
+        ]
+      })
+    });
+
+    if (!res.ok) throw new Error(`OpenAI API error ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+    const parsed = JSON.parse(data.choices?.[0]?.message?.content ?? "{}");
+
+    return {
+      provider: "openai",
+      action: parsed.action ?? "unknown",
+      query: parsed.query ?? null
     };
   }
 };
