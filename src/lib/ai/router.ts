@@ -1,14 +1,14 @@
 import type {
-  AIProvider,
-  AITask,
-  AITextRequest,
-  AITextResponse,
-  AIVideoAnalysisRequest,
-  AIVideoAnalysisResponse,
-  AIDocumentExtractionRequest,
-  AIDocumentExtractionResponse,
-  AICommandRequest,
-  AICommandResponse
+    AIProvider,
+    AITask,
+    AITextRequest,
+    AITextResponse,
+    AIVideoAnalysisRequest,
+    AIVideoAnalysisResponse,
+    AIDocumentExtractionRequest,
+    AIDocumentExtractionResponse,
+    AICommandRequest,
+    AICommandResponse
 } from "./types";
 import { mockProvider } from "./providers/mock";
 import { openaiProvider } from "./providers/openai";
@@ -21,94 +21,102 @@ import { anthropicProvider } from "./providers/anthropic";
  * Le choix du moteur (OpenAI, Claude, ou un futur modèle) se configure par
  * variables d'environnement, sans toucher au code applicatif :
  *
- *   AI_DEFAULT_PROVIDER=mock            -> provider par défaut
- *   AI_TASK_ROUTING={"diagnostic":"anthropic","video":"openai"}
- *      -> permet d'attribuer une tâche précise au provider le plus adapté
- *         (ex : Claude pour le raisonnement diagnostic, GPT-4o pour la vidéo).
+ * AI_DEFAULT_PROVIDER=mock -> provider par défaut
+ * AI_TASK_ROUTING={"diagnostic":"anthropic","video":"openai"}
+ * -> permet d'attribuer une tâche précise au provider le plus adapté
+ * (ex : Claude pour le raisonnement diagnostic, GPT-4o pour la vidéo).
+ *
+ * Réglage par atelier (Paramètres > Intelligence artificielle) : chaque
+ * requête peut porter un `preferredProvider` (voir lib/ai/workshopProvider.ts).
+ * Ordre de priorité pour une tâche donnée : AI_TASK_ROUTING[task] (si défini)
+ * > preferredProvider de l'atelier (si différent de "auto") > AI_DEFAULT_PROVIDER
+ * > "mock". Cela permet à un atelier de choisir Claude ou ChatGPT par défaut
+ * depuis l'interface, sans jamais écraser un routing fin déjà configuré côté
+ * serveur pour une tâche précise.
  *
  * Ajouter un fournisseur : créer providers/<nom>.ts, l'enregistrer dans
  * `registry` ci-dessous. Rien d'autre à modifier.
  */
 
 const registry: Record<string, AIProvider> = {
-  mock: mockProvider,
-  openai: openaiProvider,
-  anthropic: anthropicProvider
+    mock: mockProvider,
+    openai: openaiProvider,
+    anthropic: anthropicProvider
 };
 
 function getTaskRouting(): Partial<Record<AITask, string>> {
-  try {
-    return JSON.parse(process.env.AI_TASK_ROUTING ?? "{}");
-  } catch {
-    return {};
-  }
+    try {
+          return JSON.parse(process.env.AI_TASK_ROUTING ?? "{}");
+    } catch {
+          return {};
+    }
 }
 
-function resolveProvider(task: AITask): AIProvider {
-  const routing = getTaskRouting();
-  const preferred = routing[task] ?? process.env.AI_DEFAULT_PROVIDER ?? "mock";
-  const provider = registry[preferred];
+function resolveProvider(task: AITask, preferredProvider?: string): AIProvider {
+    const routing = getTaskRouting();
+    const preferred = routing[task] ?? preferredProvider ?? process.env.AI_DEFAULT_PROVIDER ?? "mock";
+    const provider = registry[preferred];
 
   if (provider && provider.supports.includes(task)) return provider;
 
   // Repli : le provider préféré ne gère pas cette tâche -> cherche le premier
   // provider disponible qui la supporte, plutôt que de bloquer le mécanicien.
   const fallback = Object.values(registry).find((p) => p.supports.includes(task));
-  if (fallback) return fallback;
+    if (fallback) return fallback;
 
   throw new Error(`Aucun provider IA disponible pour la tâche "${task}"`);
 }
 
 export async function runAITask(req: AITextRequest): Promise<AITextResponse> {
-  const provider = resolveProvider(req.task);
-  return provider.runText(req);
+    const provider = resolveProvider(req.task, req.preferredProvider);
+    return provider.runText(req);
 }
 
 export async function runVideoAnalysis(req: AIVideoAnalysisRequest): Promise<AIVideoAnalysisResponse> {
-  const routing = getTaskRouting();
-  const preferred = routing.video ?? process.env.AI_DEFAULT_PROVIDER ?? "mock";
-  let provider = registry[preferred];
+    const routing = getTaskRouting();
+    const preferred = routing.video ?? req.preferredProvider ?? process.env.AI_DEFAULT_PROVIDER ?? "mock";
+    let provider = registry[preferred];
 
   if (!provider?.runVideoAnalysis) {
-    provider = Object.values(registry).find((p) => !!p.runVideoAnalysis);
+        provider = Object.values(registry).find((p) => !!p.runVideoAnalysis);
   }
-  if (!provider?.runVideoAnalysis) {
-    throw new Error("Aucun provider IA ne supporte l'analyse vidéo actuellement");
-  }
-  return provider.runVideoAnalysis(req);
+    if (!provider?.runVideoAnalysis) {
+          throw new Error("Aucun provider IA ne supporte l'analyse vidéo actuellement");
+    }
+    return provider.runVideoAnalysis(req);
 }
 
 export async function runDocumentExtraction(req: AIDocumentExtractionRequest): Promise<AIDocumentExtractionResponse> {
-  const routing = getTaskRouting();
-  const preferred = routing.document ?? process.env.AI_DEFAULT_PROVIDER ?? "mock";
-  let provider = registry[preferred];
+    const routing = getTaskRouting();
+    const preferred = routing.document ?? req.preferredProvider ?? process.env.AI_DEFAULT_PROVIDER ?? "mock";
+    let provider = registry[preferred];
 
   if (!provider?.extractDocument) {
-    provider = Object.values(registry).find((p) => !!p.extractDocument);
+        provider = Object.values(registry).find((p) => !!p.extractDocument);
   }
-  if (!provider?.extractDocument) {
-    throw new Error("Aucun provider IA ne supporte l'extraction de document actuellement");
-  }
-  return provider.extractDocument(req);
+    if (!provider?.extractDocument) {
+          throw new Error("Aucun provider IA ne supporte l'extraction de document actuellement");
+    }
+    return provider.extractDocument(req);
 }
 
 export async function interpretVoiceCommand(req: AICommandRequest): Promise<AICommandResponse> {
-  const routing = getTaskRouting();
-  const preferred = routing.command ?? process.env.AI_DEFAULT_PROVIDER ?? "mock";
-  let provider = registry[preferred];
+    const routing = getTaskRouting();
+    const preferred = routing.command ?? req.preferredProvider ?? process.env.AI_DEFAULT_PROVIDER ?? "mock";
+    let provider = registry[preferred];
 
   if (!provider?.interpretCommand) {
-    provider = Object.values(registry).find((p) => !!p.interpretCommand);
+        provider = Object.values(registry).find((p) => !!p.interpretCommand);
   }
-  if (!provider?.interpretCommand) {
-    return { provider: "none", action: "unknown", query: null };
-  }
-  return provider.interpretCommand(req);
+    if (!provider?.interpretCommand) {
+          return { provider: "none", action: "unknown", query: null };
+    }
+    return provider.interpretCommand(req);
 }
 
 /** Utilisé par l'UI pour afficher si l'analyse temps réel est possible avec la config actuelle. */
 export function isRealtimeVideoAvailable(): boolean {
-  const routing = getTaskRouting();
-  const preferred = routing.video ?? process.env.AI_DEFAULT_PROVIDER ?? "mock";
-  return !!registry[preferred]?.supportsRealtime;
+    const routing = getTaskRouting();
+    const preferred = routing.video ?? process.env.AI_DEFAULT_PROVIDER ?? "mock";
+    return !!registry[preferred]?.supportsRealtime;
 }
