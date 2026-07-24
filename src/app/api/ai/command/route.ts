@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { interpretVoiceCommand } from "@/lib/ai/router";
+import { createClient } from "@/lib/supabase/server";
+import { getWorkshopAIProvider } from "@/lib/ai/workshopProvider";
 
 /**
  * POST /api/ai/command
@@ -10,9 +12,12 @@ import { interpretVoiceCommand } from "@/lib/ai/router";
  * nouvelle fiche, ou nouveau diagnostic sans véhicule.
  */
 export async function POST(req: NextRequest) {
-  const { text } = await req.json();
-  if (!text) return NextResponse.json({ error: "Champ 'text' requis" }, { status: 400 });
+    const { text } = await req.json();
+    if (!text) return NextResponse.json({ error: "Champ 'text' requis" }, { status: 400 });
 
-  const result = await interpretVoiceCommand({ task: "command", text });
-  return NextResponse.json(result);
+  const supabase = createClient();
+    const preferredProvider = await getWorkshopAIProvider(supabase);
+
+  const result = await interpretVoiceCommand({ task: "command", text, preferredProvider });
+    return NextResponse.json(result);
 }
