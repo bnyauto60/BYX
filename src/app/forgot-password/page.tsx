@@ -10,52 +10,62 @@ export default function ForgotPasswordPage() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError("");
-        setLoading(true);
-        const supabase = createClient();
-        const redirectTo = `${window.location.origin}/reset-password`;
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-        setLoading(false);
-        if (resetError) {
-                setError(resetError.message);
-                return;
-        }
-        setSent(true);
-  };
+const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    const supabase = createClient();
+    const redirectTo = `${window.location.origin}/reset-password`;
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    setLoading(false);
+    if (resetError) {
+        setError(resetError.message);
+        return;
+    }
+    setSent(true);
+};
 
-  return React.createElement(
+return React.createElement(
+    "div",
+    { className: "min-h-screen flex items-center justify-center px-4" },
+    React.createElement(
         "div",
-    { style: { maxWidth: 400, margin: "80px auto", padding: 24 } },
-        React.createElement("h1", null, "Mot de passe oublié"),
+        { className: "card w-full max-w-sm space-y-4" },
+        React.createElement(
+            "div",
+            { className: "text-center mb-2" },
+            React.createElement("h1", { className: "font-display text-2xl font-semibold" }, "Mot de passe oublie")
+            ),
         sent
-          ? React.createElement(
-                      "p",
-                      null,
-                      "Si un compte existe avec cet e-mail, un lien de réinitialisation vient d'être envoyé."
-                    )
-          : React.createElement(
-                      "form",
-            { onSubmit: handleSubmit },
-                      React.createElement(
-                                    "div",
-                        { style: { marginBottom: 16 } },
-                                    React.createElement("label", null, "Adresse e-mail"),
-                                    React.createElement("input", {
-                                                    type: "email",
-                                                    value: email,
-                                                    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value),
-                                                    required: true,
-                                                    style: { display: "block", width: "100%", padding: 8, marginTop: 4 }
-                                    })
-                                  ),
-                      error ? React.createElement("p", { style: { color: "red" } }, error) : null,
-                      React.createElement(
-                                    "button",
-                        { type: "submit", disabled: loading, style: { padding: "8px 16px" } },
-                                    loading ? "Envoi..." : "Envoyer le lien de réinitialisation"
-                                  )
-                    )
-      );
+        ? React.createElement(
+            "p",
+            { className: "text-sm text-center" },
+            "Si un compte existe avec cet e-mail, un lien de reinitialisation vient d'etre envoye."
+            )
+        : React.createElement(
+            "form",
+            { onSubmit: handleSubmit, className: "space-y-4" },
+            React.createElement(
+                "div",
+                null,
+                React.createElement("label", { className: "label", htmlFor: "email" }, "Adresse e-mail"),
+                React.createElement("input", {
+                    id: "email",
+                    type: "email",
+                    value: email,
+                    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value),
+                    required: true,
+                    className: "input",
+                    autoComplete: "email"
+                })
+                ),
+            error ? React.createElement("p", { className: "text-danger text-sm" }, error) : null,
+            React.createElement(
+                "button",
+                { type: "submit", disabled: loading, className: "btn btn-primary w-full" },
+                loading ? "Envoi..." : "Envoyer le lien de reinitialisation"
+                )
+            )
+        )
+    );
 }
