@@ -287,7 +287,7 @@ function renderSegment(segment: Segment) {
            segment.status === "analyzing" && h("p", { className: "text-sm text-muted" }, "Analyse IA en cours…"),
            segment.status === "error" && h("p", { className: "text-danger text-sm" }, segment.errorMsg ?? "Erreur"),
 
-           segment.status === "ready" && segment.proposal && h(Fragment, null,
+           (segment.status === "ready" || segment.status === "saving") && segment.proposal && h(Fragment, null,
                                                                h("div", null,
                                                                  h("label", { className: "label" }, "Composant"),
                                                                  h("select", {
